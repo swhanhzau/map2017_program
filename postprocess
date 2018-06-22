@@ -1,0 +1,53 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jun  6 18:41:56 2018
+
+@author: hansuwen
+"""
+
+from  itertools import islice
+import os
+import re
+snp=[]
+d={}
+s=[]
+gene={}
+snpfile=open('SNP.txt','a')  
+genefile=open('gene.txt','a')
+print('marker','chr','pos','gene','pvalue','time','pheno',sep='\t',file=snpfile)
+print('chr.','start','end','geneID','SNPsum','leadP','time','pheno',sep='\t',file=genefile)
+for a in os.listdir() :        
+    if a.find('output2.txt')>=0:  
+        spl=a.find(re.findall(r'\D',a)[2])
+        time=a[0:spl]
+        pheno=a[spl:a.find('output')]
+        for line in islice(open(a,'r'),2,None):
+            line=line.strip().split()
+            if float(line[6])<=1e-5:
+                snp.append([line[1],line[2],line[3],line[6],time,pheno])
+# =============================================================================
+# 在当前目录寻找GWAS结果文件中的output2.txt文件，并且将时间点和表型存储起来，在snp信息后面加上这些
+# =============================================================================
+for line in islice(open('geneID.bed','r'),1,None):
+    line=line.strip().split()
+    gene[line[3]]=line
+    for i in range(len(snp)):
+        if (line[0]==snp[i][1] and int(snp[i][2]) in range(int(line[1]),int(line[2])+1)):
+            snp[i].insert(3,line[3])
+            s.append(snp[i])
+            print('\t'.join(snp[i]),file=snpfile)
+# =============================================================================
+# 把snp对应的gene找出来
+# =============================================================================
+for i in s:
+    if ((i[3],i[5],i[6]) in d):
+        d[(i[3],i[5],i[6])].append(i[4])
+    else:
+        d[(i[3],i[5],i[6])]=[i[4]]
+for i in d:
+    if i[0] in gene:
+        print('\t'.join(gene[i[0]]),len(d[i]),min(d[i]),i[1],i[2],sep='\t',file=genefile)
+# =============================================================================
+# 统计gene的信息，snp数量，leadp值
+# =============================================================================
+     
